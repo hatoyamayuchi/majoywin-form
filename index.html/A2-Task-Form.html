@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A2 Task Form</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>A2 任务创建</h1>
+
+  <form id="taskForm">
+    <div>
+      <label>任务名称</label><br />
+      <input type="text" id="task_name" required />
+    </div>
+    <br />
+
+    <div>
+      <label>市场</label><br />
+      <input type="text" id="market" />
+    </div>
+    <br />
+
+    <div>
+      <label>Offer 名称</label><br />
+      <input type="text" id="offer_name" />
+    </div>
+    <br />
+
+    <div>
+      <label>角度/卖点</label><br />
+      <input type="text" id="angle" />
+    </div>
+    <br />
+
+    <div>
+      <label>文案输入</label><br />
+      <textarea id="copy_input"></textarea>
+    </div>
+    <br />
+
+    <div>
+      <label>素材输入</label><br />
+      <textarea id="asset_input"></textarea>
+    </div>
+    <br />
+
+    <div>
+      <label>创建人</label><br />
+      <input type="text" id="created_by" />
+    </div>
+    <br />
+
+    <button type="submit">提交任务</button>
+  </form>
+
+  <p id="result"></p>
+
+  <script>
+    const SUPABASE_URL = "https://oyfblyomqdstfxjxpxti.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95ZmJseW9tcWRzdGZ4anhweHRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjIxNzUsImV4cCI6MjA5MTk5ODE3NX0.t1An8UsLWyInGeXQA9aCBB-JunK_BVSoyDcXDxemHE4";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    document.getElementById("taskForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        task_name: document.getElementById("task_name").value,
+        market: document.getElementById("market").value,
+        offer_name: document.getElementById("offer_name").value,
+        angle: document.getElementById("angle").value,
+        copy_input: document.getElementById("copy_input").value,
+        asset_input: document.getElementById("asset_input").value,
+        created_by: document.getElementById("created_by").value,
+        status: "created"
+      };
+
+      const { data, error } = await client
+        .from("a2_tasks")
+        .insert([payload])
+        .select();
+
+      if (error) {
+        document.getElementById("result").innerText = "提交失败: " + error.message;
+        return;
+      }
+
+      const task = data[0];
+      const previewUrl = `${window.location.origin}/preview.html?id=${task.id}`;
+
+      await client.from("a2_outputs").insert([{
+        task_id: task.id,
+        batch_id: "batch-001",
+        preview_url: previewUrl,
+        generation_status: "generated"
+      }]);
+
+      document.getElementById("result").innerHTML =
+        `提交成功。<br>任务ID: ${task.id}<br><a href="${previewUrl}" target="_blank">打开预览页</a><br><a href="/score.html?id=${task.id}" target="_blank">去打分</a>`;
+    });
+  </script>
+</body>
+</html>
